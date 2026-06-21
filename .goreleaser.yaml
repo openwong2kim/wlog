@@ -1,6 +1,9 @@
 # GoReleaser v2 configuration for wlog.
-# Single static binary (CGO disabled, pure-Go SQLite) with the embedded web UI
-# built before compilation so internal/web/dist is populated at embed time.
+# Single static binary (CGO disabled, pure-Go SQLite) with the embedded web UI.
+# The UI (internal/web/dist) is committed, so GoReleaser does NOT rebuild it —
+# rebuilding would change the hashed asset filenames and dirty the working tree,
+# which fails GoReleaser's release-mode clean check. Rebuild + commit dist before
+# tagging a release (CI builds the UI for tests; see .github/workflows/ci.yml).
 # Docs: https://goreleaser.com
 version: 2
 
@@ -8,9 +11,7 @@ project_name: wlog
 
 before:
   hooks:
-    # Build the embedded UI first so `go:embed all:dist` picks up real assets.
-    - sh -c "cd ui && npm ci && npm run build"
-    - go mod tidy
+    - go mod download
 
 builds:
   - id: wlog
@@ -82,43 +83,6 @@ changelog:
     - title: Others
       order: 999
 
-# Homebrew tap (placeholder repo — openwong2kim/homebrew-tap).
-brews:
-  - name: wlog
-    ids:
-      - wlog
-    repository:
-      owner: openwong2kim
-      name: homebrew-tap
-      branch: main
-    directory: Formula
-    homepage: 'https://github.com/openwong2kim/wlog'
-    description: 'See your Claude Code token spend without running Grafana — a single-binary local OTLP observer.'
-    license: MIT
-    commit_author:
-      name: goreleaser-bot
-      email: bot@openwong2kim.dev
-    test: |
-      system "#{bin}/wlog", "version"
-    install: |
-      bin.install "wlog"
-
-# Scoop bucket for Windows (placeholder repo — openwong2kim/scoop-bucket).
-scoops:
-  - name: wlog
-    ids:
-      - wlog
-    repository:
-      owner: openwong2kim
-      name: scoop-bucket
-      branch: main
-    homepage: 'https://github.com/openwong2kim/wlog'
-    description: 'See your Claude Code token spend without running Grafana — a single-binary local OTLP observer.'
-    license: MIT
-    commit_author:
-      name: goreleaser-bot
-      email: bot@openwong2kim.dev
-
 release:
   github:
     owner: openwong2kim
@@ -126,3 +90,15 @@ release:
   draft: false
   prerelease: auto
   name_template: 'wlog {{ .Tag }}'
+  header: |
+    **Local Claude Code observability in a single binary.**
+
+    Tokens, cost, and tool decisions from your Claude Code sessions — zero-config
+    from `~/.claude/projects`, optional OTLP for live updates, an embedded web UI,
+    plus a native desktop app. Six screens including a GitHub-style **Daily** usage
+    heatmap and a shared period filter across views.
+
+    ### Install
+    - `go install github.com/openwong2kim/wlog/cmd/wlog@latest`
+    - Or download a prebuilt archive below (linux / macOS / windows · amd64 / arm64)
+      and verify it against `checksums.txt`.

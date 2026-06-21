@@ -117,19 +117,6 @@ The installer (`.msi` / `-setup.exe` on Windows) is a normal per-user install. R
 
 ## Install
 
-### Homebrew (macOS / Linux)
-
-```bash
-brew install openwong2kim/tap/wlog
-```
-
-### Scoop (Windows)
-
-```powershell
-scoop bucket add openwong2kim https://github.com/openwong2kim/scoop-bucket
-scoop install wlog
-```
-
 ### go install
 
 ```bash
@@ -142,6 +129,8 @@ Download a prebuilt static binary for your OS/arch from the
 [Releases page](https://github.com/openwong2kim/wlog/releases), unpack it, and put
 `wlog` on your `PATH`. Builds are published for linux, macOS, and Windows on
 amd64 and arm64, with checksums and an SBOM.
+
+> A Homebrew tap and Scoop bucket are planned.
 
 ---
 
