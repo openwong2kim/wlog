@@ -1,0 +1,24 @@
+# Go
+/wlog
+/wlog.exe
+*.exe
+*.test
+*.out
+/dist-bin/
+# wlog data
+*.db
+*.db-wal
+*.db-shm
+*.bak-v*
+# node / vite
+node_modules/
+ui/node_modules/
+# OS
+.DS_Store
+Thumbs.db
+# temp
+/tmp/
+desktop-build.log
+CODEX-PLAN-REVIEW.txt
+.gstack/
+CODEX-IMPL-REVIEW.txt

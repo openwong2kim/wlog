@@ -1,0 +1,93 @@
+# Taskfile for wlog — single-binary OTLP receiver + embedded UI for Claude Code.
+# Run with `task <target>` (https://taskfile.dev). All Go builds force
+# CGO_ENABLED=0 to guarantee a fully static binary (modernc.org/sqlite is pure Go).
+version: '3'
+
+vars:
+  BINARY: wlog
+  MODULE: github.com/openwong2kim/wlog
+  MAIN: ./cmd/wlog
+  # VERSION resolves from the latest git tag (e.g. v0.1.0 -> 0.1.0); falls back
+  # to 0.0.0-dev when no tag/git is present (sed strips a leading "v").
+  VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null | sed 's/^v//' || echo "0.0.0-dev"
+  COMMIT:
+    sh: git rev-parse --short HEAD 2>/dev/null || echo "none"
+  DATE:
+    sh: date -u +%Y-%m-%dT%H:%M:%SZ
+  # ldflags inject build metadata into internal/version and strip symbols (-s -w).
+  LDFLAGS: >-
+    -s -w
+    -X {{.MODULE}}/internal/version.Version={{.VERSION}}
+    -X {{.MODULE}}/internal/version.Commit={{.COMMIT}}
+    -X {{.MODULE}}/internal/version.Date={{.DATE}}
+
+env:
+  CGO_ENABLED: '0'
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  ui:
+    desc: Build the embedded web UI (ui/ -> internal/web/dist)
+    dir: ui
+    cmds:
+      - npm ci
+      - npm run build
+
+  build:
+    desc: Build the static wlog binary (builds the UI first so dist is embedded)
+    deps: [ui]
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BINARY}}{{exeExt}} {{.MAIN}}
+    generates:
+      - '{{.BINARY}}{{exeExt}}'
+
+  build:nogen:
+    desc: Build the binary without rebuilding the UI (uses checked-in/last dist)
+    cmds:
+      - go build -ldflags "{{.LDFLAGS}}" -o {{.BINARY}}{{exeExt}} {{.MAIN}}
+
+  run:
+    desc: Build then run wlog (receiver + UI, auto-opens browser)
+    deps: [build]
+    cmds:
+      - ./{{.BINARY}}{{exeExt}}
+
+  test:
+    desc: Run the full Go test suite (static, no CGO)
+    cmds:
+      - go test ./...
+
+  vet:
+    desc: Run go vet across all packages
+    cmds:
+      - go vet ./...
+
+  tidy:
+    desc: Tidy and verify go.mod / go.sum
+    cmds:
+      - go mod tidy
+      - go mod verify
+
+  cross:
+    desc: Cross-compile demo matrix (linux/darwin/windows x amd64/arm64)
+    deps: [ui]
+    cmds:
+      - for: { matrix: { GOOS: [linux, darwin, windows], GOARCH: [amd64, arm64] } }
+        cmd: >-
+          GOOS={{.ITEM.GOOS}} GOARCH={{.ITEM.GOARCH}}
+          go build -ldflags "{{.LDFLAGS}}"
+          -o dist-bin/{{.BINARY}}_{{.ITEM.GOOS}}_{{.ITEM.GOARCH}}{{if eq .ITEM.GOOS "windows"}}.exe{{end}}
+          {{.MAIN}}
+
+  clean:
+    desc: Remove build artifacts (binary, cross-compile dir, built UI dist)
+    cmds:
+      - rm -f {{.BINARY}} {{.BINARY}}.exe
+      - rm -rf dist-bin
+      - rm -rf internal/web/dist/assets

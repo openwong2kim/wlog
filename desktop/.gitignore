@@ -1,0 +1,15 @@
+# node
+node_modules/
+
+# rust / tauri build output
+src-tauri/target/
+src-tauri/gen/
+
+# build-time temp redirect (used to avoid full C: drive during bundling)
+.buildtmp/
+
+# bundled sidecar binary — regenerated from the repo-root wlog.exe at build time
+src-tauri/binaries/*.exe
+
+# generated icon source
+app-icon.png

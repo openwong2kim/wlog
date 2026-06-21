@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: '1.26'
+  NODE_VERSION: '22'
+
+jobs:
+  test:
+    name: Test (linux, race)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Build embedded UI
+        # Build the UI first so internal/web/dist holds real assets that the Go
+        # tests/build embed via `go:embed all:dist`.
+        run: |
+          cd ui
+          npm ci
+          npm run build
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test -race
+        # The race detector requires cgo + a C compiler, which ubuntu-latest has
+        # by default. We run -race only here (not on the local Windows dev box,
+        # which has no C compiler) so the data-race gate still runs in CI.
+        env:
+          CGO_ENABLED: '1'
+        run: go test ./... -race
+
+      - name: Static build sanity check
+        env:
+          CGO_ENABLED: '0'
+        run: go build -ldflags "-s -w" -o /tmp/wlog ./cmd/wlog
+
+  cross:
+    name: Cross-compile (${{ matrix.goos }}/${{ matrix.goarch }})
+    runs-on: ubuntu-latest
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    env:
+      CGO_ENABLED: '0'
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Build embedded UI
+        run: |
+          cd ui
+          npm ci
+          npm run build
+
+      - name: Cross build
+        run: |
+          ext=""
+          if [ "$GOOS" = "windows" ]; then ext=".exe"; fi
+          go build -ldflags "-s -w" -o "wlog_${GOOS}_${GOARCH}${ext}" ./cmd/wlog
+
+  lint:
+    name: Lint (staticcheck)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Build embedded UI
+        # staticcheck type-checks packages that embed dist, so build the UI first.
+        run: |
+          cd ui
+          npm ci
+          npm run build
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+
+      - name: Run staticcheck
+        run: staticcheck ./...

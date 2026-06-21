@@ -1,0 +1,128 @@
+# GoReleaser v2 configuration for wlog.
+# Single static binary (CGO disabled, pure-Go SQLite) with the embedded web UI
+# built before compilation so internal/web/dist is populated at embed time.
+# Docs: https://goreleaser.com
+version: 2
+
+project_name: wlog
+
+before:
+  hooks:
+    # Build the embedded UI first so `go:embed all:dist` picks up real assets.
+    - sh -c "cd ui && npm ci && npm run build"
+    - go mod tidy
+
+builds:
+  - id: wlog
+    main: ./cmd/wlog
+    binary: wlog
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/openwong2kim/wlog/internal/version.Version={{.Version}}
+      - -X github.com/openwong2kim/wlog/internal/version.Commit={{.Commit}}
+      - -X github.com/openwong2kim/wlog/internal/version.Date={{.Date}}
+
+archives:
+  - id: wlog
+    ids:
+      - wlog
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    # tar.gz everywhere, zip on Windows.
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+      - CHANGELOG.md
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+# Software Bill of Materials generated with syft for each archive.
+sboms:
+  - id: archive
+    artifacts: archive
+
+snapshot:
+  version_template: '{{ incpatch .Version }}-next'
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+      - 'Merge pull request'
+      - 'Merge branch'
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+
+# Homebrew tap (placeholder repo — openwong2kim/homebrew-tap).
+brews:
+  - name: wlog
+    ids:
+      - wlog
+    repository:
+      owner: openwong2kim
+      name: homebrew-tap
+      branch: main
+    directory: Formula
+    homepage: 'https://github.com/openwong2kim/wlog'
+    description: 'See your Claude Code token spend without running Grafana — a single-binary local OTLP observer.'
+    license: MIT
+    commit_author:
+      name: goreleaser-bot
+      email: bot@openwong2kim.dev
+    test: |
+      system "#{bin}/wlog", "version"
+    install: |
+      bin.install "wlog"
+
+# Scoop bucket for Windows (placeholder repo — openwong2kim/scoop-bucket).
+scoops:
+  - name: wlog
+    ids:
+      - wlog
+    repository:
+      owner: openwong2kim
+      name: scoop-bucket
+      branch: main
+    homepage: 'https://github.com/openwong2kim/wlog'
+    description: 'See your Claude Code token spend without running Grafana — a single-binary local OTLP observer.'
+    license: MIT
+    commit_author:
+      name: goreleaser-bot
+      email: bot@openwong2kim.dev
+
+release:
+  github:
+    owner: openwong2kim
+    name: wlog
+  draft: false
+  prerelease: auto
+  name_template: 'wlog {{ .Tag }}'
