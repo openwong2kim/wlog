@@ -27,9 +27,9 @@
 > Your Claude Code already writes its history to disk and already speaks OTel. You just need something to read it — without `docker-compose`.
 
 <p align="center">
-  <img src="docs/screenshots/wlog-daily.png" alt="Daily usage heatmap — GitHub-style contribution grid of tokens/cost per day" width="720">
+  <img src="docs/screenshots/wlog-demo.gif" alt="wlog demo — cycling through the Now, Sessions, Cost, Daily, Tools, and Timeline screens" width="900">
 </p>
-<p align="center"><i>Daily usage — a GitHub-style "잔디" heatmap of your tokens (or cost) per day.</i></p>
+<p align="center"><i>One local binary, six screens: a live Now tail, cost &amp; tokens, a GitHub-style Daily usage heatmap, tool accept/reject, and a per-session timeline.</i></p>
 
 ---
 
