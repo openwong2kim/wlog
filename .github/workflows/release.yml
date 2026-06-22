@@ -38,3 +38,8 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # PAT used only to push the Homebrew formula / Scoop manifest to the
+          # separate tap repos (the default GITHUB_TOKEN is scoped to this repo).
+          # If the secret is absent, GoReleaser skips that upload (see skip_upload
+          # in .goreleaser.yaml), so the release still succeeds.
+          GH_PAT: ${{ secrets.GH_PAT }}
