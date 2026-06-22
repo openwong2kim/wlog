@@ -59,6 +59,51 @@ sboms:
   - id: archive
     artifacts: archive
 
+# Homebrew tap + Scoop bucket. They publish to SEPARATE repos, which the default
+# Actions GITHUB_TOKEN cannot push to, so they authenticate with a PAT exposed as
+# GH_PAT (wired in .github/workflows/release.yml). When GH_PAT is absent (e.g.
+# before the secret is added) skip_upload evaluates to true, so the release still
+# succeeds — the formula/manifest is generated locally but not pushed. Add the
+# GH_PAT secret + re-run a release to activate one-line installs.
+homebrew_casks:
+  - name: wlog
+    binaries:
+      - wlog
+    repository:
+      owner: openwong2kim
+      name: homebrew-tap
+      branch: main
+      token: '{{ .Env.GH_PAT }}'
+    homepage: 'https://github.com/openwong2kim/wlog'
+    description: 'Local observability for Claude Code in a single binary'
+    skip_upload: '{{ if .Env.GH_PAT }}false{{ else }}true{{ end }}'
+    commit_author:
+      name: goreleaser-bot
+      email: goreleaser@users.noreply.github.com
+    # The binary is unsigned/unnotarized; strip the quarantine bit on install so
+    # macOS Gatekeeper doesn't flag it as "damaged".
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/wlog"]
+          end
+
+scoops:
+  - name: wlog
+    repository:
+      owner: openwong2kim
+      name: scoop-bucket
+      branch: main
+      token: '{{ .Env.GH_PAT }}'
+    homepage: 'https://github.com/openwong2kim/wlog'
+    description: 'Local observability for Claude Code in a single binary'
+    license: MIT
+    skip_upload: '{{ if .Env.GH_PAT }}false{{ else }}true{{ end }}'
+    commit_author:
+      name: goreleaser-bot
+      email: goreleaser@users.noreply.github.com
+
 snapshot:
   version_template: '{{ incpatch .Version }}-next'
 
@@ -94,9 +139,9 @@ release:
     **Local Claude Code observability in a single binary.**
 
     Tokens, cost, and tool decisions from your Claude Code sessions — zero-config
-    from `~/.claude/projects`, optional OTLP for live updates, an embedded web UI,
-    plus a native desktop app. Six screens including a GitHub-style **Daily** usage
-    heatmap and a shared period filter across views.
+    from `~/.claude/projects`, optional OTLP for live updates, and an embedded web
+    UI. Six screens including a GitHub-style **Daily** usage heatmap and a shared
+    period filter across views.
 
     ### Install
     - `go install github.com/openwong2kim/wlog/cmd/wlog@latest`
