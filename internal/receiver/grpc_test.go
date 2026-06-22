@@ -6,7 +6,6 @@ import (
 	"net"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/openwong2kim/wlog/internal/ingest"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
@@ -69,8 +68,6 @@ func startBufGRPCAuth(t *testing.T, sub submitter, maxRecv int64, authToken stri
 	srv := registerGRPC(sub, maxRecv, authToken)
 	go func() { _ = srv.Serve(lis) }()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 	dialOpts := []grpc.DialOption{
 		grpc.WithContextDialer(func(ctx context.Context, _ string) (net.Conn, error) {
 			return lis.DialContext(ctx)
@@ -80,7 +77,9 @@ func startBufGRPCAuth(t *testing.T, sub submitter, maxRecv int64, authToken stri
 	if creds != nil {
 		dialOpts = append(dialOpts, grpc.WithPerRPCCredentials(creds))
 	}
-	conn, err := grpc.DialContext(ctx, "bufnet", dialOpts...)
+	// passthrough:/// stops grpc.NewClient from DNS-resolving the bufconn target;
+	// the WithContextDialer above supplies the in-memory connection instead.
+	conn, err := grpc.NewClient("passthrough:///bufnet", dialOpts...)
 	if err != nil {
 		t.Fatalf("dial bufconn: %v", err)
 	}
