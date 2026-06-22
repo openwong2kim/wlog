@@ -5,6 +5,42 @@ All notable changes to wlog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-06-22
+
+### Added
+
+- **One-command setup** (`wlog setup`) — merges the Claude Code OTel env block,
+  the status line, and a SessionEnd summary hook into `~/.claude/settings.json`
+  in a single idempotent, atomic write (`.bak` backup, all other keys preserved).
+  No more copy-pasting a shell snippet that silently did nothing on
+  PowerShell/cmd/fish.
+- **`wlog setup` sub-modes**: `--print` (dry run), `--uninstall` (value-matched
+  teardown that removes only what wlog wrote, honoring `--no-statusline` /
+  `--no-hooks`), and `--status` (a read-only doctor that checks the env, endpoint
+  port, OTLP protocol, status line, SessionEnd hook, transcript dir, and whether
+  data is flowing — without ever creating the database).
+- **Prompt-capture toggle** `--prompts` sets `OTEL_LOG_USER_PROMPTS` (off by
+  default for privacy); plain `wlog setup` turns it back off (idempotent in both
+  directions).
+- **SessionEnd summary hook** (`wlog hook session-end`) — a passive, read-only
+  end-of-session summary (the same report as `wlog last`) that always exits 0, so
+  it can never wedge Claude Code's session teardown.
+- **Cross-platform onboarding**: `wlog --print-claude-setup` and the in-UI
+  onboarding now emit the settings.json-native JSON `env` block (works on every
+  OS, not just bash), and `/api/setup` returns an additive `env` field.
+- **First-run nudge**: when telemetry isn't wired to wlog yet, the server prints a
+  one-time hint to run `wlog setup`.
+
+### Changed
+
+- Read-only commands (`setup --status`, the SessionEnd hook, `last`, `statusline`)
+  no longer create the data directory as a side effect.
+
+### Fixed
+
+- A pre-existing data race in the server start/shutdown test, surfaced by the
+  first `go test -race` run in CI.
+
 ## [0.1.0] - 2026-06-22
 
 ### Added
@@ -103,4 +139,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `go test -race` runs in CI (Linux) only; the local Windows toolchain has no C
   compiler, so the project builds and tests with `CGO_ENABLED=0`.
 
-[Unreleased]: https://github.com/openwong2kim/wlog/commits/main
+[Unreleased]: https://github.com/openwong2kim/wlog/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/openwong2kim/wlog/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/openwong2kim/wlog/releases/tag/v0.1.0
