@@ -140,6 +140,10 @@ func Run(ctx context.Context, c *config.Config) error {
 		}
 	}
 
+	// --- First-run setup nudge -----------------------------------------------
+	// One-time hint to run `wlog setup` when telemetry isn't wired to us yet.
+	maybeSetupNudge(c)
+
 	// --- Periodic retention --------------------------------------------------
 	ticker := time.NewTicker(retentionInterval)
 	defer ticker.Stop()

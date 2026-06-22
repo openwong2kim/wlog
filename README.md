@@ -177,23 +177,17 @@ Cost, tokens, models, cache-hit ratios, and bash/MCP command history are populat
 
 The transcript files don't include Claude Code's permission decisions (accept/reject and the source), and they're only written as a session progresses. Turn on OTLP to get **live updates** and the **tool-decision** data that powers the Tools screen.
 
-Print the exact environment block and paste it into your shell profile (or your Claude Code `settings.json` `env`):
+The fastest way is one command — it merges the OTel env block, the status line, and a SessionEnd summary hook into `~/.claude/settings.json` (preserving your other settings, with a `.bak` backup):
 
 ```bash
-wlog --print-claude-setup
+wlog setup              # then restart Claude Code
+wlog setup --status     # verify it took effect (read-only)
+wlog setup --uninstall  # undo anytime
 ```
 
-```bash
-# Claude Code OTel setup for wlog
-export CLAUDE_CODE_ENABLE_TELEMETRY=1
-export OTEL_METRICS_EXPORTER=otlp
-export OTEL_LOGS_EXPORTER=otlp
-export OTEL_EXPORTER_OTLP_PROTOCOL=grpc
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317
-# then restart your shell and run Claude Code
-```
+Prefer to do it by hand? `wlog --print-claude-setup` prints the exact JSON `env` block (and a bash form) to paste into `~/.claude/settings.json`.
 
-Restart your shell, run Claude Code, make a request, and switch back to the **Now** tab — the first `api_request` reaches wlog within a few seconds.
+Then run Claude Code, make a request, and switch back to the **Now** tab — the first `api_request` reaches wlog within a few seconds.
 
 > Want prompt text and detailed tool arguments too? Those are opt-in on the Claude Code side (`OTEL_LOG_USER_PROMPTS=1`). See [Privacy](#privacy) before enabling — they get stored in your local DB.
 
@@ -207,6 +201,7 @@ Restart your shell, run Claude Code, make a request, and switch back to the **No
 wlog                              run the receiver + UI, auto-open the browser
 wlog last [--session id] [--n N]  print a one-shot summary of the latest session
 wlog statusline [--install]       emit one status line for Claude Code's status bar
+wlog setup [--status|--uninstall] auto-configure Claude Code (OTel + statusline + hook)
 wlog tail [--session id]          stream live events to the terminal (no UI)
 wlog export --session <id> [...]  export a session to a file or stdout
 wlog version                      print version information

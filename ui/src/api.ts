@@ -226,6 +226,9 @@ export interface ToolsQuery {
 // ---- /api/setup ----
 export interface SetupResponse {
   snippet: string;
+  // Cross-platform settings.json-native env block (works on every OS, unlike the
+  // bash-only `snippet`). Optional for back-compat with older servers.
+  env?: Record<string, string>;
   ports: { grpc: number; http: number };
 }
 

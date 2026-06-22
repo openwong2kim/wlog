@@ -100,7 +100,7 @@ func renderStatusline(ctx context.Context, c *config.Config, sessionID string) s
 	// Fill the default DB path for the direct-call/test path; never Validate()
 	// (statusline binds no port, and a validation error must not break the bar).
 	if c.DBPath == "" && !c.Memory {
-		c.DBPath = config.DefaultDBPath()
+		c.DBPath = config.DefaultDBPathNoCreate()
 	}
 
 	// OpenReader's error cases (ErrDBNotFound / ErrDBNeedsUpgrade / downgrade guard)

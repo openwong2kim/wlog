@@ -13,14 +13,18 @@ type setupPorts struct {
 }
 
 // setupResponse is the /api/setup body (PLAN §10): the Claude Code OTel env
-// snippet plus the configured OTLP ports for the Onboarding screen.
+// snippet plus the configured OTLP ports for the Onboarding screen. Env is the
+// cross-platform settings.json-native form (additive; works on every OS, unlike
+// the bash-only Snippet which is kept for back-compat).
 type setupResponse struct {
-	Snippet string     `json:"snippet"`
-	Ports   setupPorts `json:"ports"`
+	Snippet string            `json:"snippet"`
+	Env     map[string]string `json:"env"`
+	Ports   setupPorts        `json:"ports"`
 }
 
 // handleSetup returns the Claude Code OTel setup snippet (equivalent to
-// --print-claude-setup) and the live OTLP ports.
+// --print-claude-setup), the settings.json-native env block, and the live OTLP
+// ports.
 func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	grpcPort := config.DefaultOTLPGRPCPort
 	httpPort := config.DefaultOTLPHTTPPort
@@ -30,6 +34,7 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, setupResponse{
 		Snippet: config.ClaudeSetupSnippet(grpcPort),
+		Env:     config.OTelEnv(grpcPort, false),
 		Ports:   setupPorts{GRPC: grpcPort, HTTP: httpPort},
 	})
 }

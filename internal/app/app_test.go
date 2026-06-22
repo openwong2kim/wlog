@@ -73,12 +73,13 @@ func TestRun_HealthThenGracefulShutdown(t *testing.T) {
 
 	lineCh := make(chan string, 8)
 	runErrCh := make(chan error, 1)
+	captureDone := make(chan struct{})
 
 	go func() {
-		out := captureStdout(t, lineCh, func() {
+		_ = captureStdout(t, lineCh, func() {
 			runErrCh <- Run(ctx, cfg)
 		})
-		_ = out
+		close(captureDone)
 	}()
 
 	// Wait for the startup banner and pull the UI port from it.
@@ -135,6 +136,12 @@ func TestRun_HealthThenGracefulShutdown(t *testing.T) {
 	case <-time.After(15 * time.Second):
 		t.Fatal("Run did not return after context cancel (graceful shutdown stuck)")
 	}
+
+	// Wait for captureStdout to finish restoring the global os.Stdout before
+	// returning. Run() sends on runErrCh from inside captureStdout's fn, i.e.
+	// BEFORE captureStdout restores os.Stdout — so without this join the capture
+	// goroutine is still writing os.Stdout when the next test reads it (-race).
+	<-captureDone
 }
 
 func TestRun_UIPortConflictHint(t *testing.T) {
