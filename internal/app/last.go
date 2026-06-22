@@ -49,7 +49,7 @@ func Last(ctx context.Context, c *config.Config, sessionID string, n int) error 
 	// Last; we fill the default here too so a direct app-layer call still works,
 	// without re-applying WLOG_* (it would clobber explicit flags, C7).
 	if c.DBPath == "" && !c.Memory {
-		c.DBPath = config.DefaultDBPath()
+		c.DBPath = config.DefaultDBPathNoCreate()
 	}
 
 	st, err := store.OpenReader(c.DBPath, c.Memory, storeBusyTimeoutMS)

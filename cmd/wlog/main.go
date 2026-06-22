@@ -55,7 +55,12 @@ func newRootCmd() *cobra.Command {
 		// Default command (no subcommand) runs the receiver + UI.
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if cfg.PrintClaudeSetup {
-				fmt.Fprintln(cmd.OutOrStdout(), config.ClaudeSetupSnippet(cfg.OTLPGRPCPort))
+				o := cmd.OutOrStdout()
+				fmt.Fprintln(o, "# Recommended: run `wlog setup` to apply this automatically.")
+				fmt.Fprintln(o, "# Or merge this into ~/.claude/settings.json (works on every OS):")
+				fmt.Fprintln(o, config.ClaudeSetupSnippetJSON(cfg.OTLPGRPCPort, false))
+				fmt.Fprintln(o, "\n# Shell form (bash/zsh only — does nothing on PowerShell/cmd/fish):")
+				fmt.Fprintln(o, config.ClaudeSetupSnippet(cfg.OTLPGRPCPort))
 				return nil
 			}
 			if err := resolve(cfg, f); err != nil {
@@ -73,6 +78,8 @@ func newRootCmd() *cobra.Command {
 	root.AddCommand(newTailCmd(cfg, f))
 	root.AddCommand(newLastCmd(cfg, f))
 	root.AddCommand(newStatuslineCmd(cfg, f))
+	root.AddCommand(newSetupCmd(cfg, f))
+	root.AddCommand(newHookCmd(cfg, f))
 	root.AddCommand(newExportCmd(cfg, f))
 	root.AddCommand(newVersionCmd())
 
@@ -176,6 +183,60 @@ func newStatuslineCmd(cfg *config.Config, f *flags) *cobra.Command {
 	return cmd
 }
 
+// newSetupCmd builds `wlog setup`: one command to wire wlog into Claude Code —
+// it merges the OTel env block, status line, and SessionEnd summary hook into
+// ~/.claude/settings.json. Sub-modes: --print (dry run), --uninstall
+// (value-matched teardown), --status (read-only doctor). Like statusline/last it
+// binds no port and never runs the server-oriented resolve()/Validate(); --status
+// opens the store read-only, so resolveReadOnly (DB path only) is sufficient.
+func newSetupCmd(cfg *config.Config, _ *flags) *cobra.Command {
+	var o app.SetupOptions
+	cmd := &cobra.Command{
+		Use:   "setup",
+		Short: "Auto-configure Claude Code for wlog (OTel + status line + summary hook)",
+		Long: "wlog setup merges the Claude Code OTel env block, the status line, and a\n" +
+			"SessionEnd summary hook into ~/.claude/settings.json — turning the old\n" +
+			"copy-paste onboarding into one command. It preserves all other settings,\n" +
+			"backs the file up first, and is idempotent. Restart Claude Code afterward.",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			resolveReadOnly(cfg)
+			ctx, stop := signalContext()
+			defer stop()
+			return app.Setup(ctx, cfg, o)
+		},
+	}
+	cmd.Flags().BoolVar(&o.Print, "print", false, "show what would be written and exit (dry run; nothing is changed)")
+	cmd.Flags().BoolVar(&o.Uninstall, "uninstall", false, "remove wlog's settings (only values wlog wrote) and exit")
+	cmd.Flags().BoolVar(&o.Status, "status", false, "check the current setup read-only and exit")
+	cmd.Flags().BoolVar(&o.Prompts, "prompts", false, "also capture prompt text (OTEL_LOG_USER_PROMPTS=1); off by default for privacy")
+	cmd.Flags().BoolVar(&o.NoStatusLine, "no-statusline", false, "do not register the status line")
+	cmd.Flags().BoolVar(&o.NoHooks, "no-hooks", false, "do not register the SessionEnd summary hook")
+	return cmd
+}
+
+// newHookCmd builds `wlog hook ...`: handlers wlog registers as Claude Code
+// hooks. `wlog hook session-end` reads the hook JSON from stdin and prints a
+// one-shot session summary; it opens the store read-only and always exits 0 so
+// it can never wedge Claude Code's session teardown.
+func newHookCmd(cfg *config.Config, _ *flags) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "hook",
+		Short: "Claude Code hook handlers",
+	}
+	sessionEnd := &cobra.Command{
+		Use:   "session-end",
+		Short: "Render a session summary for Claude Code's SessionEnd hook (reads JSON on stdin)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			resolveReadOnly(cfg)
+			ctx, stop := signalContext()
+			defer stop()
+			return app.HookSessionEnd(ctx, cfg)
+		},
+	}
+	cmd.AddCommand(sessionEnd)
+	return cmd
+}
+
 func newExportCmd(cfg *config.Config, f *flags) *cobra.Command {
 	var (
 		session string
@@ -245,7 +306,8 @@ func resolve(cfg *config.Config, f *flags) error {
 // left unparsed here.
 func resolveReadOnly(cfg *config.Config) {
 	if cfg.DBPath == "" && !cfg.Memory {
-		cfg.DBPath = config.DefaultDBPath()
+		// NoCreate: read-only commands must not create the data dir as a side effect.
+		cfg.DBPath = config.DefaultDBPathNoCreate()
 	}
 }
 

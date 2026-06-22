@@ -89,6 +89,14 @@ func DefaultDBPath() string {
 	return filepath.Join(dir, "wlog.db")
 }
 
+// DefaultDBPathNoCreate returns the same path as DefaultDBPath but WITHOUT
+// creating the data directory. Read-only commands (statusline, last, setup
+// --status, the SessionEnd hook) use this so a passive invocation never mutates
+// the filesystem (OpenReader returns ErrDBNotFound gracefully when absent).
+func DefaultDBPathNoCreate() string {
+	return filepath.Join(defaultDataDir(), "wlog.db")
+}
+
 func defaultDataDir() string {
 	switch runtime.GOOS {
 	case "windows":
