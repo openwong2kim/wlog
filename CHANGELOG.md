@@ -5,10 +5,17 @@ All notable changes to wlog are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.0] - 2026-06-22
 
 ### Added
 
+- **Daily usage heatmap** — a GitHub-style "잔디" contribution grid of tokens (or
+  cost) per local calendar day, with a tokens/cost toggle and the shared period
+  filter sizing the grid.
+- **Shared period filter** (`7d · 30d · 90d · 1y · All`) across Now, Sessions,
+  Cost, Daily, and Tools; plus per-model and hour/day-bucket filters on Cost.
+- **Native desktop app** (Tauri) that bundles `wlog` as a sidecar: one window
+  starts the local server and UI and tears it down on close — no terminal needed.
 - **Single static binary** OTLP receiver + embedded web UI for Claude Code
   telemetry. No daemon, Docker, or external database. `CGO_ENABLED=0` build
   using pure-Go `modernc.org/sqlite`.

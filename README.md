@@ -12,6 +12,14 @@
   Single static binary · reads <code>~/.claude/projects</code> · zero-config · local-only · embedded web UI
 </p>
 
+<p align="center">
+  <a href="https://github.com/openwong2kim/wlog/releases/latest"><img src="https://img.shields.io/github/v/release/openwong2kim/wlog?sort=semver&color=2ea043" alt="Latest release"></a>
+  <a href="https://github.com/openwong2kim/wlog/actions/workflows/ci.yml"><img src="https://github.com/openwong2kim/wlog/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://pkg.go.dev/github.com/openwong2kim/wlog"><img src="https://pkg.go.dev/badge/github.com/openwong2kim/wlog.svg" alt="Go reference"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license"></a>
+  <img src="https://img.shields.io/badge/platform-linux%20%C2%B7%20macOS%20%C2%B7%20windows-lightgrey" alt="Platforms">
+</p>
+
 ---
 
 `wlog` reads the transcript files Claude Code already writes, normalizes everything locally, and serves an embedded web UI. No Docker, no daemon, no external database, no SaaS. Run `wlog` and your past sessions — cost, tokens, and command history — are there immediately, with **zero configuration**. Turn on OpenTelemetry (OTLP) when you also want live updates and tool-decision data.
@@ -22,6 +30,19 @@
   <img src="docs/screenshots/wlog-daily.png" alt="Daily usage heatmap — GitHub-style contribution grid of tokens/cost per day" width="720">
 </p>
 <p align="center"><i>Daily usage — a GitHub-style "잔디" heatmap of your tokens (or cost) per day.</i></p>
+
+---
+
+## Highlights
+
+- 🟢 **Zero-config** — reads `~/.claude/projects` transcripts; your past sessions appear the moment you run it
+- 📊 **Six screens** — Now (live), Sessions, Cost & Tokens, **Daily** usage heatmap, Tools, Timeline
+- 🟩 **Daily "잔디"** — a GitHub-style contribution grid of tokens (or cost) per day
+- 🔍 **Filters everywhere** — shared period (7d · 30d · 90d · 1y · All); per-model & hour/day on Cost
+- 🖥️ **Desktop app** — a native Tauri app that bundles `wlog` as a sidecar: one window, no terminal
+- 🔒 **Local-only** — no Docker, no SaaS, no external DB; prompt collection is opt-in
+- 📡 **Optional OTLP** — add live updates and tool-decision data when you want them
+- 📦 **Single static binary** — pure-Go (incl. SQLite), ~26 MB, copy-and-run
 
 ---
 
