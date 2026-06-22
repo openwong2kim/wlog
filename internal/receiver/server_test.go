@@ -83,11 +83,10 @@ func startServer(t *testing.T, w model.Writer) (*Server, *ingest.Pipeline) {
 
 func dialServer(t *testing.T, addr string) *grpc.ClientConn {
 	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	conn, err := grpc.DialContext(ctx, addr,
+	// grpc.NewClient connects lazily; the Export RPCs that follow establish the
+	// connection (the server is already listening before we dial here).
+	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		t.Fatalf("dial %s: %v", addr, err)

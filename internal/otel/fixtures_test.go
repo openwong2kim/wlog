@@ -2,7 +2,6 @@ package otel
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"testing"
 
 	collectorlogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
@@ -111,12 +110,6 @@ func logRecord(eventName string, timeNano uint64, attrs ...*commonpb.KeyValue) *
 	}
 }
 
-func logRecordBody(eventName string, timeNano uint64, body *commonpb.AnyValue, attrs ...*commonpb.KeyValue) *logspb.LogRecord {
-	lr := logRecord(eventName, timeNano, attrs...)
-	lr.Body = body
-	return lr
-}
-
 func logsReq(res *resourcepb.Resource, records ...*logspb.LogRecord) *collectorlogspb.ExportLogsServiceRequest {
 	return &collectorlogspb.ExportLogsServiceRequest{
 		ResourceLogs: []*logspb.ResourceLogs{{
@@ -169,13 +162,3 @@ const (
 	tDelta = metricspb.AggregationTemporality_AGGREGATION_TEMPORALITY_DELTA
 	tCumul = metricspb.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE
 )
-
-// decodeAttrs parses an attrs_json column back into a map for assertions.
-func decodeAttrs(t *testing.T, s string) map[string]any {
-	t.Helper()
-	var m map[string]any
-	if err := json.Unmarshal([]byte(s), &m); err != nil {
-		t.Fatalf("attrs_json not valid JSON: %v\n%s", err, s)
-	}
-	return m
-}
